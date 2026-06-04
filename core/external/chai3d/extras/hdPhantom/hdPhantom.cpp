@@ -77,7 +77,10 @@ using namespace chai3d;
 #define PHANTOM_NUM_DEVICES_MAX 4
 #endif
 #ifdef LINUX
-#define PHANTOM_NUM_DEVICES_MAX 4
+// NOTE: Set to 1 for GTDD (GeomagicTouchDeviceDrivers) which has a bug where
+// failed hdInitDevice calls for non-existent devices corrupt the first device's
+// USB HID state, causing "Resource busy" errors.
+#define PHANTOM_NUM_DEVICES_MAX 1
 #endif
 
 // structure used to store data related to each device entity
@@ -186,7 +189,9 @@ _hdLoad(void)
         numPhantomDevices = 0;
 
         // search for a first device
-        HHD hHD0 = hdInitDevice(HD_DEFAULT_DEVICE);
+        // NOTE: HD_DEFAULT_DEVICE (NULL) does not work with GeomagicTouchDeviceDrivers (GTDD).
+        // Use the config name from ~/.3dsystems/config/ instead.
+        HHD hHD0 = hdInitDevice("Default Device");
 
         // check if device is available
         if (!HD_DEVICE_ERROR(error = hdGetError()) && hHD0 != HD_INVALID_HANDLE)
