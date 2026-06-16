@@ -502,6 +502,12 @@ bool afVisualUtils::createFromAttribs(afVisualAttributes *attribs, cMultiMesh *m
     }
 
     mesh->setShowEnabled(attribs->m_visible);
+
+    if (attribs->m_showFrame){
+        mesh->setShowFrame(true);
+        mesh->setFrameSize(attribs->m_frameSize);
+    }
+
     return true;
 }
 
@@ -1364,6 +1370,14 @@ void afBaseObject::calculateFrameSize()
 {
     std::vector<afSceneObject*>::iterator it;
     for (it = m_childrenSceneObjects.begin(); it != m_childrenSceneObjects.end() ; ++it){
+        // Preserve an explicit frame size requested from the ADF via
+        // "show frame: true" / "frame size". Those objects already have the
+        // frame enabled with the user's size; don't clobber it with the
+        // bounding-box auto size (which also defaults to 0.5 when the bound is
+        // not yet computed).
+        if ((*it)->getChaiObject()->getShowFrame()){
+            continue;
+        }
         // Set the size of the frame.
         cVector3d bounds = (*it)->getChaiObject()->getBoundaryMax();
         double frame_size;

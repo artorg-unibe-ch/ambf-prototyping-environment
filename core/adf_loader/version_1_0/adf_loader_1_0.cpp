@@ -297,6 +297,17 @@ bool ADFUtils::getVisualAttribsFromNode(YAML::Node *a_node, afVisualAttributes *
         attribs->m_visible = visibleNode.as<bool>();
     }
 
+    // Optional CHAI3D coordinate-frame (RGB XYZ arrows) on the visual mesh,
+    // matching the native haptic-device cursor look.
+    YAML::Node showFrameNode = node["show frame"];
+    YAML::Node frameSizeNode = node["frame size"];
+    if (showFrameNode.IsDefined()){
+        attribs->m_showFrame = showFrameNode.as<bool>();
+    }
+    if (frameSizeNode.IsDefined()){
+        attribs->m_frameSize = frameSizeNode.as<double>();
+    }
+
     return valid;
 }
 

@@ -370,6 +370,8 @@ struct afVisualAttributes{
     afVisualAttributes(){
         m_visible = true;
         m_meshRemoveDuplicates = afStatusFlag::UNDEFINED;
+        m_showFrame = false;
+        m_frameSize = 0.5;
     }
 
     afPath m_meshFilepath;
@@ -378,6 +380,10 @@ struct afVisualAttributes{
     vector<afPrimitiveShapeAttributes> m_primitiveShapes;
     afColorAttributes m_colorAttribs;
     bool m_visible;
+    // Render the CHAI3D coordinate frame (RGB XYZ arrows) on this object's
+    // visual mesh. Enabled from an ADF via "show frame: true" / "frame size: <m>".
+    bool m_showFrame;
+    double m_frameSize;
 };
 
 
