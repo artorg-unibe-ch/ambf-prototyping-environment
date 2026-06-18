@@ -3831,7 +3831,37 @@ btVector3 afJoint::getDefaultJointAxisInParent(afJointType a_type)
     return jINp;
 }
 
+void afJoint::updateContinuousPosition(){
+    // Only revolute joints report a btAtan2-wrapped angle; every other joint
+    // type already returns a continuous coordinate from getPosition().
+    if (m_jointType != afJointType::REVOLUTE){
+        return;
+    }
+    double wrapped = m_hinge->getHingeAngle();   // (-pi, pi]
+    if (!m_continuousPositionValid){
+        m_continuousPosition = wrapped;
+        m_lastWrappedPosition = wrapped;
+        m_continuousPositionValid = true;
+        return;
+    }
+    double delta = wrapped - m_lastWrappedPosition;
+    // Unwrap the per-step delta into (-pi, pi]. A physical joint never rotates
+    // more than pi within a single physics step, so this recovers the true
+    // incremental motion even when the link crosses the +-pi seam.
+    if (delta > SIMD_PI){
+        delta -= SIMD_2_PI;
+    }
+    else if (delta < -SIMD_PI){
+        delta += SIMD_2_PI;
+    }
+    m_continuousPosition += delta;
+    m_lastWrappedPosition = wrapped;
+}
+
 void afJoint::cacheState(const double &dt){
+    // Advance the continuous-angle tracker once per physics step, before any
+    // getPosition() read below uses it.
+    updateContinuousPosition();
     for (uint i = 0 ; i < m_jpSize-1 ; i++){
         m_posArray[i] = m_posArray[i+1];
         m_dtArray[i] = m_dtArray[i+1];
@@ -3956,8 +3986,18 @@ void afJoint::commandVelocity(double &velocity_cmd){
 ///
 double afJoint::getPosition(){
     double jntPos = 0.0;
-    if (m_jointType == afJointType::REVOLUTE)
-        jntPos = m_hinge->getHingeAngle();
+    if (m_jointType == afJointType::REVOLUTE){
+        // For a limited revolute joint return the continuous (unwrapped) angle so
+        // a range that touches the +-pi seam does not report a ~2*pi jump, which
+        // would explode the position-PD error (flipping the joint to the opposite
+        // limit) and make the published seed / derived velocity discontinuous.
+        // Free (unlimited) revolute joints keep the raw wrapped angle so their
+        // state stays bounded and the shortest-angle controller is unaffected.
+        if (m_enableLimits && m_continuousPositionValid)
+            jntPos = m_continuousPosition;
+        else
+            jntPos = m_hinge->getHingeAngle();
+    }
     else if (m_jointType == afJointType::PRISMATIC)
         jntPos = m_slider->getLinearPos();
     else if (m_jointType == afJointType::FIXED)

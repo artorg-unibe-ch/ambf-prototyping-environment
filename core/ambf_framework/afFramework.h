@@ -1453,6 +1453,18 @@ private:
     vector<double> m_posArray;
     vector<double> m_dtArray;
 
+    // Continuous (unwrapped) revolute-joint position tracking. Bullet's
+    // getHingeAngle() is btAtan2-wrapped to (-pi, pi], so a limited joint whose
+    // range touches the +-pi seam reports a ~2*pi jump when the link crosses the
+    // seam. That jump explodes the position-PD error (flipping the joint to the
+    // opposite limit) and makes the published seed / derived velocity
+    // discontinuous. We accumulate the wrapped per-step delta into a continuous
+    // coordinate, advanced once per physics step from cacheState().
+    void updateContinuousPosition();
+    double m_continuousPosition = 0.0;
+    double m_lastWrappedPosition = 0.0;
+    bool m_continuousPositionValid = false;
+
 };
 
 
