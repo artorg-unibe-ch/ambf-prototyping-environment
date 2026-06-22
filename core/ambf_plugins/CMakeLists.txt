@@ -38,4 +38,5 @@
 #  $Rev:  $
 
 add_subdirectory(core)
+add_subdirectory(joint_limit_hud)
 # add_subdirectory(examples)
