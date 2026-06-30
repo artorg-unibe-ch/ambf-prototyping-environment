@@ -85,6 +85,12 @@ void RigidBodyRosCom::reset_cmd(){
 }
 
 void RigidBodyRosCom::sub_cb(const AMBF_RAL_MSG(ambf_msgs, RigidBodyCmd) & msg){
+    // Lock against get_command() (sim thread reads m_Cmd). The reassignment of
+    // m_Cmd reallocates its std::vectors; without this lock a concurrent read
+    // tears the command -> heap corruption (worst with two publishers). Uses the
+    // same m_writeMtx AMBF already uses to guard state.
+    m_writeMtx.lock();
     m_Cmd = msg;
+    m_writeMtx.unlock();
     m_watchDogPtr->acknowledge_wd();
 }

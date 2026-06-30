@@ -658,7 +658,14 @@ void afObjectCommunicationPlugin::rigidBodyFetchCommand(afRigidBodyPtr afRBPtr, 
     btRigidBody* btRBPtr = afRBPtr->m_bulletRigidBody;
     btVector3 force, torque;
     typedef AMBF_RAL_MSG(ambf_msgs, RigidBodyCmd) cmd_rb_t;
+    // get_command() reads m_Cmd, which sub_cb() reassigns from the ROS thread.
+    // Hold m_writeMtx across the read so we don't copy a torn command (the other
+    // reader, rigidBodyUpdateState(), already holds this lock). Without it, two
+    // publishers (bimanual teleop) sending different-length commands cause a
+    // torn read -> heap corruption (malloc tcache / segfault).
+    m_rigidBodyCommPtr->m_writeMtx.lock();
     cmd_rb_t afCommand = m_rigidBodyCommPtr->get_command();
+    m_rigidBodyCommPtr->m_writeMtx.unlock();
 
     // IF THE COMMAND IS OF TYPE FORCE
     switch (afCommand.cartesian_cmd_type) {

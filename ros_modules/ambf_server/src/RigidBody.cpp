@@ -146,6 +146,11 @@ void RigidBody::cur_angular_velocity(double ax, double ay, double az){
 /// \return
 ///
 AMBF_RAL_MSG(ambf_msgs, RigidBodyCmd) RigidBody::get_command(){
+    // NOTE: callers must hold m_writeMtx while calling this (it reads m_Cmd,
+    // which sub_cb() reassigns from the ROS thread). Do NOT lock here: this is
+    // also called from rigidBodyUpdateState() which already holds m_writeMtx, so
+    // locking here would self-deadlock (non-recursive mutex). The unlocked caller
+    // (rigidBodyFetchCommand) takes the lock around its call instead.
     AMBF_RAL_MSG(ambf_msgs, RigidBodyCmd) temp_cmd = m_Cmd;
     int joint_commands_size = m_Cmd.joint_cmds.size();
     temp_cmd.joint_cmds_types.resize(joint_commands_size);
