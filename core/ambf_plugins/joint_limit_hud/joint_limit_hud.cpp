@@ -209,8 +209,8 @@ void afJointLimitHudPlugin::buildLabels(){
 
 void afJointLimitHudPlugin::buildRos(){
     // Only called once rclcpp is already up (see graphicsUpdate). We deliberately do
-    // NOT rclcpp::init ourselves: in PATH B ros_comm_plugin has already done it, and in
-    // PATH A (no ROS) we must not force-initialise it -- the verdict line just stays "--".
+    // NOT rclcpp::init ourselves: in IK teleop ros_comm_plugin has already done it, and in
+    // native haptics (no ROS) we must not force-initialise it -- the verdict line just stays "--".
     m_rosNode = std::make_shared<rclcpp::Node>("joint_limit_hud_reach");
     for (size_t i = 0 ; i < m_reach.size() ; i++){
         const size_t idx = i;   // capture by value for the callback
@@ -257,9 +257,9 @@ void afJointLimitHudPlugin::graphicsUpdate(){
             return;
         }
     }
-    // Pump the reachability subscription. Build it lazily once rclcpp is up (PATH B,
+    // Pump the reachability subscription. Build it lazily once rclcpp is up (IK teleop,
     // where ros_comm_plugin initialised it); retried each frame until then, and never
-    // built in a non-ROS PATH A session. spin_some is non-blocking; the verdict only
+    // built in a non-ROS native-haptics session. spin_some is non-blocking; the verdict only
     // arrives at a few Hz so most frames process nothing.
     if (!m_rosBuilt && rclcpp::ok()){
         buildRos();
